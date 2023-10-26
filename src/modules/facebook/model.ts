@@ -1,8 +1,9 @@
 import { model, Schema } from 'mongoose';
 
-const FacebookSchema = new Schema(
+const TokenSchema = new Schema(
   {
     accessToken: String,
+    tokenType: String,
   },
   {
     timestamps: true,
@@ -10,5 +11,5 @@ const FacebookSchema = new Schema(
   },
 );
 
-const FacebookModel = model('facebook', FacebookSchema);
-export { FacebookModel };
+const TokenModel = model('token', TokenSchema);
+export { TokenModel };

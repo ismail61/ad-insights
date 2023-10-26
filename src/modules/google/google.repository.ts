@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { TokenModel } from './model';
+import { TokenModel } from '../facebook/model';
 
 @Injectable()
-export class FacebookRepository {
+export class GoogleRepository {
   async create(data: Record<string, any>) {
     return await TokenModel.create({
-      tokenType: 'facebook',
+      tokenType: 'google',
       ...data,
     });
   }
