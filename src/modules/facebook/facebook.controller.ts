@@ -7,14 +7,35 @@ import {
   CommonErrorResponseDto,
 } from '../../dto/common.dto';
 import {
+  GetFacebookAccessTokenQueryDto,
   GetFacebookAdAccountsQueryDto,
   GetFacebookAdInsightsQueryDto,
+  GetFacebookAuthCodeQueryDto,
 } from './dto/facebook.dto';
 
 @Controller('facebook-insights')
 @ApiTags('Facebook Insights API')
 export class FacebookController {
   constructor(private readonly facebookService: FacebookService) {}
+
+  @Get('/auth-code')
+  @ApiOperation({
+    summary: 'Obtain an auth code.',
+  })
+  async getAuthCode(@Query() query: GetFacebookAuthCodeQueryDto) {
+    return await this.facebookService.getAuthCode(
+      query.client_id,
+      query.redirect_uri,
+    );
+  }
+
+  @Get('/access-token')
+  @ApiOperation({
+    summary: 'Obtain a facebook access token',
+  })
+  async getAccessToken(@Query() query: GetFacebookAccessTokenQueryDto) {
+    return await this.facebookService.getAccessToken(query);
+  }
 
   @Get('/ad-accounts')
   @ApiOperation({ summary: 'Obtain all ad accounts.' })

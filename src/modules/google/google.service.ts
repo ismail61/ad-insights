@@ -2,20 +2,46 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { APIException } from 'src/internal/exception.filter';
 import { GoogleRepository } from './google.repository';
-import { googleConfig } from 'config/google';
+const scopes = [
+  'https://www.googleapis.com/auth/adwords',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+].join(' ');
+const responseType = 'token';
+const prompt = 'consent';
 
 @Injectable()
 export class GoogleService {
   constructor(private googleRepo: GoogleRepository) {}
 
-  async getAccessibleCustomers(accessToken: string): Promise<any> {
+  async getAccessToken(client_id: string, redirect_uri: string): Promise<any> {
+    try {
+      const stringifiedParams = `client_id=${client_id}&redirect_uri=${encodeURIComponent(
+        redirect_uri,
+      )}&scope=${scopes}&response_type=${responseType}&state=${'pass-through value'}&prompt=${prompt}&include_granted_scopes=${true}`;
+
+      const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?${stringifiedParams}`;
+      return { redirectUrl };
+    } catch (error) {
+      console.log(error);
+      throw new APIException(
+        `Failed to get Google auth code: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async getAccessibleCustomers(
+    accessToken: string,
+    developer_token: string,
+  ): Promise<any> {
     try {
       const config = {
         method: 'get',
         maxBodyLength: Infinity,
         url: 'https://googleads.googleapis.com/v15/customers:listAccessibleCustomers',
         headers: {
-          'developer-token': googleConfig.developerToken,
+          'developer-token': developer_token,
           Authorization: `Bearer ${accessToken}`,
         },
       };
@@ -42,6 +68,7 @@ export class GoogleService {
   async getAllAccessibleCustomersInfo(
     accessToken: string,
     managerCustomerId: string,
+    developer_token: string,
   ): Promise<any> {
     try {
       const data = JSON.stringify({
@@ -54,7 +81,7 @@ export class GoogleService {
         maxBodyLength: Infinity,
         url: `https://googleads.googleapis.com/v15/customers/${managerCustomerId}/googleAds:search`,
         headers: {
-          'developer-token': '5-Rn_DmpPUX5UKJmnZ_8hA',
+          'developer-token': developer_token,
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
@@ -83,6 +110,7 @@ export class GoogleService {
     accessToken: string,
     managerCustomerId: string,
     customerId: string,
+    developer_token: string,
   ): Promise<any> {
     try {
       const data = JSON.stringify({
@@ -95,7 +123,7 @@ export class GoogleService {
         maxBodyLength: Infinity,
         url: `https://googleads.googleapis.com/v15/customers/${customerId}/googleAds:search`,
         headers: {
-          'developer-token': '5-Rn_DmpPUX5UKJmnZ_8hA',
+          'developer-token': developer_token,
           'login-customer-id': managerCustomerId,
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,

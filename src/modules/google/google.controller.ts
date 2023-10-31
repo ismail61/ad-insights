@@ -1,17 +1,34 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { AccessTokenQueryDto } from '../../dto/common.dto';
 import { GoogleService } from './google.service';
+import {
+  GetGoogleAccessTokenQueryDto,
+  GoogleAccessTokenQueryDto,
+} from './dto/google';
 
 @Controller('google-insights')
 @ApiTags('Google Insights API')
 export class GoogleController {
   constructor(private readonly googleService: GoogleService) {}
 
+  @Get('/access-token')
+  @ApiOperation({
+    summary: 'Obtain a facebook access token',
+  })
+  async getAccessToken(@Query() query: GetGoogleAccessTokenQueryDto) {
+    return await this.googleService.getAccessToken(
+      query.client_id,
+      query.redirect_uri,
+    );
+  }
+
   @Get('/accessible-customers')
   @ApiOperation({ summary: 'Obtain all accessible customers.' })
-  async getAccessibleCustomers(@Query() query: AccessTokenQueryDto) {
-    return await this.googleService.getAccessibleCustomers(query.accessToken);
+  async getAccessibleCustomers(@Query() query: GoogleAccessTokenQueryDto) {
+    return await this.googleService.getAccessibleCustomers(
+      query.accessToken,
+      query.developer_token,
+    );
   }
 
   @Get('/accessible-customers/:managerCustomerId/customers-info')
@@ -29,11 +46,12 @@ export class GoogleController {
   })
   async getAllAccessibleCustomersInfo(
     @Param('managerCustomerId') managerCustomerId: string,
-    @Query() query: AccessTokenQueryDto,
+    @Query() query: GoogleAccessTokenQueryDto,
   ) {
     return await this.googleService.getAllAccessibleCustomersInfo(
       query.accessToken,
       managerCustomerId,
+      query.developer_token,
     );
   }
 
@@ -60,7 +78,7 @@ export class GoogleController {
     required: true,
   })
   async getCampaignInsights(
-    @Query() query: AccessTokenQueryDto,
+    @Query() query: GoogleAccessTokenQueryDto,
     @Param('managerCustomerId') managerCustomerId: string,
     @Param('customerId') customerId: string,
   ) {
@@ -68,6 +86,7 @@ export class GoogleController {
       query.accessToken,
       managerCustomerId,
       customerId,
+      query.developer_token,
     );
   }
 }
