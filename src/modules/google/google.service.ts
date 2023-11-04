@@ -2,46 +2,78 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { APIException } from 'src/internal/exception.filter';
 import { GoogleRepository } from './google.repository';
-const scopes = [
-  'https://www.googleapis.com/auth/adwords',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-].join(' ');
-const responseType = 'token';
+import { googleConfig } from 'config/google';
+const scope = 'https://www.googleapis.com/auth/adwords';
+const responseType = 'code';
 const prompt = 'consent';
 
 @Injectable()
 export class GoogleService {
   constructor(private googleRepo: GoogleRepository) {}
 
-  async getAccessToken(client_id: string, redirect_uri: string): Promise<any> {
+  async getAuthCodeRedirectUri(): Promise<any> {
     try {
-      const stringifiedParams = `client_id=${client_id}&redirect_uri=${encodeURIComponent(
-        redirect_uri,
-      )}&scope=${scopes}&response_type=${responseType}&state=${'pass-through value'}&prompt=${prompt}&include_granted_scopes=${true}`;
+      const stringifiedParams = `client_id=${
+        googleConfig.clientID
+      }&redirect_uri=${encodeURIComponent(
+        googleConfig.redirectUri,
+      )}&scope=${scope}&response_type=${responseType}&prompt=${prompt}&include_granted_scopes=${true}`;
 
       const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?${stringifiedParams}`;
       return { redirectUrl };
     } catch (error) {
       console.log(error);
       throw new APIException(
-        `Failed to get Google auth code: ${error.message}`,
+        `Failed to get Facebook auth code: ${error.message}`,
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  async getAccessibleCustomers(
-    accessToken: string,
-    developer_token: string,
-  ): Promise<any> {
+  async getAccessToken(code: string): Promise<any> {
+    try {
+      const requestData = {
+        code,
+        client_id: googleConfig.clientID,
+        client_secret: googleConfig.clientSecret,
+        redirect_uri: googleConfig.redirectUri,
+        grant_type: 'authorization_code',
+      };
+      const config = {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      };
+
+      // Convert the requestData to a URL-encoded string
+      const data = new URLSearchParams(requestData).toString();
+      const response = await axios.post(
+        'https://oauth2.googleapis.com/token',
+        data,
+        config,
+      );
+      const responseData = response.data;
+      if (!responseData) {
+        throw new Error();
+      }
+      return responseData;
+    } catch (error) {
+      console.log(error);
+      throw new APIException(
+        `Failed to get facebook access token: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async getAccessibleCustomers(accessToken: string): Promise<any> {
     try {
       const config = {
         method: 'get',
         maxBodyLength: Infinity,
         url: 'https://googleads.googleapis.com/v15/customers:listAccessibleCustomers',
         headers: {
-          'developer-token': developer_token,
+          'developer-token': googleConfig.developerToken,
           Authorization: `Bearer ${accessToken}`,
         },
       };
@@ -68,7 +100,6 @@ export class GoogleService {
   async getAllAccessibleCustomersInfo(
     accessToken: string,
     managerCustomerId: string,
-    developer_token: string,
   ): Promise<any> {
     try {
       const data = JSON.stringify({
@@ -81,7 +112,7 @@ export class GoogleService {
         maxBodyLength: Infinity,
         url: `https://googleads.googleapis.com/v15/customers/${managerCustomerId}/googleAds:search`,
         headers: {
-          'developer-token': developer_token,
+          'developer-token': googleConfig.developerToken,
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
@@ -110,7 +141,6 @@ export class GoogleService {
     accessToken: string,
     managerCustomerId: string,
     customerId: string,
-    developer_token: string,
   ): Promise<any> {
     try {
       const data = JSON.stringify({
@@ -123,7 +153,7 @@ export class GoogleService {
         maxBodyLength: Infinity,
         url: `https://googleads.googleapis.com/v15/customers/${customerId}/googleAds:search`,
         headers: {
-          'developer-token': developer_token,
+          'developer-token': googleConfig.developerToken,
           'login-customer-id': managerCustomerId,
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,

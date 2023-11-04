@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { APIException } from 'src/internal/exception.filter';
 import { FacebookRepository } from './facebook.repository';
+import { facebookConfig } from 'config/facebook';
 const graphqlApiEndpoint = 'https://graph.facebook.com';
 const graphqlApiVersion = 'v18.0';
 const scope = ['email', 'ads_management', 'ads_read', 'read_insights'].join(
@@ -15,10 +16,12 @@ const display = 'popup';
 export class FacebookService {
   constructor(private facebookRepo: FacebookRepository) {}
 
-  async getAuthCode(client_id: string, redirect_uri: string): Promise<any> {
+  async getAuthCodeRedirectUri(): Promise<any> {
     try {
-      const stringifiedParams = `client_id=${client_id}&redirect_uri=${encodeURIComponent(
-        redirect_uri,
+      const stringifiedParams = `client_id=${
+        facebookConfig.clientID
+      }&redirect_uri=${encodeURIComponent(
+        facebookConfig.redirectUriAuthCode,
       )}&scope=${scope}&response_type=${responseType}&auth_type=${authType}&display=${display}`;
 
       const facebookLoginUrl = `https://www.facebook.com/v18.0/dialog/oauth?${stringifiedParams}`;
@@ -32,16 +35,10 @@ export class FacebookService {
     }
   }
 
-  async getAccessToken(query: {
-    auth_code: string;
-    client_id: string;
-    redirect_uri: string;
-    client_secret: string;
-  }): Promise<any> {
+  async getAccessToken(auth_code: string): Promise<any> {
     try {
-      const { client_id, redirect_uri, client_secret, auth_code } = query;
       const response = await axios.get(
-        `${graphqlApiEndpoint}/${graphqlApiVersion}/oauth/access_token?client_id=${client_id}&redirect_uri=${redirect_uri}&client_secret=${client_secret}&code=${auth_code}`,
+        `${graphqlApiEndpoint}/${graphqlApiVersion}/oauth/access_token?client_id=${facebookConfig.clientID}&redirect_uri=${facebookConfig.redirectUriAuthCode}&client_secret=${facebookConfig.clientSecret}&code=${auth_code}`,
       );
       const responseData = response.data;
       if (!responseData) {

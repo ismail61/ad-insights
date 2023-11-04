@@ -10,7 +10,6 @@ import {
   GetFacebookAccessTokenQueryDto,
   GetFacebookAdAccountsQueryDto,
   GetFacebookAdInsightsQueryDto,
-  GetFacebookAuthCodeQueryDto,
 } from './dto/facebook.dto';
 
 @Controller('facebook-insights')
@@ -20,13 +19,18 @@ export class FacebookController {
 
   @Get('/auth-code')
   @ApiOperation({
-    summary: 'Obtain an auth code.',
+    summary: 'Obtain a redirect uri to get the auth_code',
   })
-  async getAuthCode(@Query() query: GetFacebookAuthCodeQueryDto) {
-    return await this.facebookService.getAuthCode(
-      query.client_id,
-      query.redirect_uri,
-    );
+  async getAuthCodeRedirectUri() {
+    return await this.facebookService.getAuthCodeRedirectUri();
+  }
+
+  @Get('/get-auth-code')
+  @ApiOperation({
+    summary: 'Do not hit the api, please. Its obtain api redirect auth code',
+  })
+  async getRedirectAuthCode(@Query() query: any) {
+    return { auth_code: query?.code };
   }
 
   @Get('/access-token')
@@ -34,7 +38,7 @@ export class FacebookController {
     summary: 'Obtain a facebook access token',
   })
   async getAccessToken(@Query() query: GetFacebookAccessTokenQueryDto) {
-    return await this.facebookService.getAccessToken(query);
+    return await this.facebookService.getAccessToken(query.auth_code);
   }
 
   @Get('/ad-accounts')

@@ -11,24 +11,34 @@ import {
 export class GoogleController {
   constructor(private readonly googleService: GoogleService) {}
 
+  @Get('/code')
+  @ApiOperation({
+    summary: 'Obtain a redirect uri to get the code',
+  })
+  async getAuthCodeRedirectUri() {
+    return await this.googleService.getAuthCodeRedirectUri();
+  }
+
+  @Get('/get-code')
+  @ApiOperation({
+    summary: 'Do not hit the api, please. Its obtain api redirect auth code',
+  })
+  async getAuthCode(@Query() query: any) {
+    return { code: query?.code };
+  }
+
   @Get('/access-token')
   @ApiOperation({
-    summary: 'Obtain a facebook access token',
+    summary: 'Obtain a google access token',
   })
   async getAccessToken(@Query() query: GetGoogleAccessTokenQueryDto) {
-    return await this.googleService.getAccessToken(
-      query.client_id,
-      query.redirect_uri,
-    );
+    return await this.googleService.getAccessToken(query.code);
   }
 
   @Get('/accessible-customers')
   @ApiOperation({ summary: 'Obtain all accessible customers.' })
   async getAccessibleCustomers(@Query() query: GoogleAccessTokenQueryDto) {
-    return await this.googleService.getAccessibleCustomers(
-      query.accessToken,
-      query.developer_token,
-    );
+    return await this.googleService.getAccessibleCustomers(query.accessToken);
   }
 
   @Get('/accessible-customers/:managerCustomerId/customers-info')
@@ -51,7 +61,6 @@ export class GoogleController {
     return await this.googleService.getAllAccessibleCustomersInfo(
       query.accessToken,
       managerCustomerId,
-      query.developer_token,
     );
   }
 
@@ -86,7 +95,6 @@ export class GoogleController {
       query.accessToken,
       managerCustomerId,
       customerId,
-      query.developer_token,
     );
   }
 }
