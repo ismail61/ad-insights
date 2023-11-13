@@ -10,7 +10,7 @@ const scope = ['email', 'ads_management', 'ads_read', 'read_insights'].join(
 );
 const responseType = 'code';
 const authType = 'rerequest';
-const display = 'popup';
+const display = 'dialog';
 
 @Injectable()
 export class FacebookService {
